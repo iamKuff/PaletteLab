@@ -12,7 +12,7 @@ Extract beautiful color palettes from any image. Perfect for designers and devel
 - 📱 Fully responsive design
 
 ## 🚀 Live Demo
-[Try Palette Lab](https://your-github-username.github.io/palette-lab)
+[Try Palette Lab](https://iamKuff.github.io/PaletteLab)
 
 ## 🔍 Keywords
 `#colorpalette` `#webdesign` `#ui` `#ux` `#design` `#webdev` `#frontend` `#css` `#tailwindcss` `#github` `#opensource` `#developer` `#designer` `#tool` `#color` `#palette` `#development` `#websitedesign` `#graphicdesign` `#uidesign` `#creative` `#colorscheme` `#colorcombination` `#colorinspiration` `#designtools` `#webdesigntools` `#designresources` `#uiuxdesign` `#colortheory` `#designinspiration`

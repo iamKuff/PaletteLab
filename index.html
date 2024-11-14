@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palette Lab - Image Color Palette Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --card-shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .dropzone {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary);
+            background: #f1f5f9;
+        }
+
+        .dropzone.drag-over {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 2rem auto;
+            display: block;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .color-box {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: var(--card-shadow);
+        }
+
+        .color-box:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .color-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.75rem;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            transform: translateY(100%);
+            transition: transform 0.2s ease;
+            backdrop-filter: blur(4px);
+            font-size: 0.9rem;
+        }
+
+        .color-box:hover .color-info {
+            transform: translateY(0);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .tool-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .tool-section h3 {
+            color: #0f172a;
+            margin-bottom: 1rem;
+        }
+
+        .scheme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .scheme-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .scheme-title {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .scheme-colors {
+            height: 40px;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1e293b;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .history-panel {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .history-item {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .history-item:hover {
+            transform: scale(1.05);
+        }
+
+        .history-colors {
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .history-color {
+            flex: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading::after {
+            content: '';
+            width: 32px;
+            height: 32px;
+            border: 4px solid #6366f1;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo">Palette Lab 🎨</h1>
+            <p class="subtitle">Extract beautiful color palettes from any image. Perfect for designers and developers.</p>
+        </header>
+
+        <div class="main-container">
+            <div class="panel">
+                <div class="dropzone" id="dropzone">
+                    <div id="loading" class="loading" style="display: none;"></div>
+                    <div class="dropzone-text">
+                        <h3>Drop your image here</h3>
+                        <p style="color: #64748b; margin-top: 0.5rem;">
+                            or click to upload (JPG, PNG, WebP)<br>
+                            <span style="font-size: 0.9rem">You can also paste with Ctrl/Cmd + V</span>
+                        </p>
+                    </div>
+                </div>
+                <img id="preview" class="preview" style="display: none" crossorigin="anonymous">
+            </div>
+
+            <div class="panel">
+                <h2>Color Palette</h2>
+                <div id="palette" class="palette"></div>
+
+                <div class="tool-section">
+                    <h3>Color Schemes</h3>
+                    <div id="schemes" class="scheme-grid"></div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Export</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn" onclick="exportPalette('css')">Copy CSS Variables</button>
+                        <button class="btn" onclick="exportPalette('tailwind')">Copy Tailwind Config</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <h3>Recent Palettes</h3>
+            <div id="history" class="history-grid"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <footer>
+        <p>Made with ❤️ by Your Name</p>
+    </footer>
+
+    <script>
+        const colorThief = new ColorThief();
+        const dropzone = document.getElementById('dropzone');
+        const preview = document.getElementById('preview');
+        const palette = document.getElementById('palette');
+        const schemes = document.getElementById('schemes');
+        const loading = document.getElementById('loading');
+        const history = document.getElementById('history');
+
+        let paletteHistory = JSON.parse(localStorage.getItem('paletteHistory') || '[]');
+
+        // Event Listeners
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('drag-over');
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        dropzone.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => handleFile(e.target.files[0]);
+            input.click();
+        });
+
+        document.addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items;
+            const imageItem = Array.from(items).find(item => item.type.startsWith('image/'));
+            
+            if (imageItem) {
+                const blob = imageItem.getAsFile();
+                handleFile(blob);
+            }
+        });
+
+        // File handling
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('Please upload a valid image file');
+                return;
+            }
+
+            loading.style.display = 'flex';
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                preview.onload = () => {
+                    try {
+                        const colors = colorThief.getPalette(preview, 6);
+                        displayPalette(colors);
+                        generateColorSchemes(colors[0]);
+                        addToHistory(colors);
+                    } catch (error) {
+                        showToast('Error extracting colors. Please try another image.');
+                    } finally {
+                        loading.style.display = 'none';
+                    }
+                };
+
+                preview.onerror = () => {
+                    loading.style.display = 'none';
+                    showToast('Error loading image. Please try another one.');
+                };
+            };
+
+            reader.onerror = () => {
+                loading.style.display = 'none';
+                showToast('Error reading file. Please try again.');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Color utilities
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('').toUpperCase();
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : null;
+        }
+
+        // Display functions
+        function displayPalette(colors) {
+            palette.innerHTML = '';
+            colors.forEach(color => {
+                const hex = rgbToHex(...color);
+                const box = document.createElement('div');
+                box.className = 'color-box';
+                box.style.backgroundColor = hex;
+                
+                const colorInfo = document.createElement('div');
+                colorInfo.className = 'color-info';
+                colorInfo.innerHTML = `
+                    <div>${hex}</div>
+                    <div>RGB(${color.join(', ')})</div>
+                `;
+                
+                box.appendChild(colorInfo);
+                
+                box.addEventListener('click', () => {
+                    navigator.clipboard.writeText(hex);
+                    showToast('Color copied to clipboard!');
+                });
+                
+                palette.appendChild(box);
+            });
+        }
+
+        // Color scheme generation
+        function generateColorSchemes(baseColor) {
+            schemes.innerHTML = '';
+            const schemeTypes = {
+                'Monochromatic': generateMonochromatic,
+                'Complementary': generateComplementary,
+                'Analogous': generateAnalogous
+            };
+
+            for (const [name, generator] of Object.entries(schemeTypes)) {
+                const colors = generator(baseColor);
+                const scheme = createSchemeElement(name, colors);
+                schemes.appendChild(scheme);
+            }
+        }
+
+        function createSchemeElement(name, colors) {
+            const scheme = document.createElement('div');
+            scheme.className = 'scheme-card';
+            
+            const title = document.createElement('div');
+            title.className = 'scheme-title';
+            title.textContent = name;
+            
+            const colorStrip = document.createElement('div');
+            colorStrip.className = 'scheme-colors';
+            
+            colors.forEach(color => {
+                const strip = document.createElement('div');
+                strip.style.flex = '1';
+                strip.style.backgroundColor = rgbToHex(...color);
+                strip.style.cursor = 'pointer';
+                strip.addEventListener('click', () => {
+                    navigator.clipboard.writeText(rgbToHex(...color));
+                    showToast('Color copied to clipboard!');
+                });
+                colorStrip.appendChild(strip);
+            });
+            
+            scheme.appendChild(title);
+            scheme.appendChild(colorStrip);
+            return scheme;
+        }
+
+        // Color scheme algorithms
+        function generateMonochromatic(baseColor) {
+            const [h, s, l] = rgbToHsl(...baseColor);
+            return [
+                hslToRgb(h, s, l * 0.7),
+                hslToRgb(h, s, l),
+                hslToRgb(h, s, Math.min(1, l * 1.3))
+            ];
+        }
+
+        function generateComplementary(baseColor) {
+            const [h, s, l] = rgbToHsl(...baseColor);
+            return [
+                baseColor,
+                hslToRgb((h + 0.5) % 1, s, l)
+            ];
+        }
+
+        function generateAnalogous(baseColor) {
+            const [h, s, l] = rgbToHsl(...baseColor);
+            return [
+                hslToRgb((h + 0.917) % 1, s, l),
+                baseColor,
+                hslToRgb((h + 0.083) % 1, s, l)
+            ];
+        }
+
+        // Color space conversion utilities
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return [h, s, l];
+        }
+
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        // Export functionality
+        function exportPalette(format) {
+            const colors = Array.from(palette.children).map(box => box.style.backgroundColor);
+            let output = '';
+
+            switch(format) {
+                case 'css':
+                    output = `:root {\n${colors.map((c, i) => `  --color-${i + 1}: ${c};`).join('\n')}\n}`;
+                    break;
+                case 'tailwind':
+                    output = `module.exports = {\n  theme: {\n    extend: {\n      colors: {\n${
+                        colors.map((c, i) => `        'palette-${i + 1}': '${c}'`).join(',\n')
+                    }\n      }\n    }\n  }\n}`;
+                    break;
+            }
+
+            navigator.clipboard.writeText(output);
+            showToast(`Copied ${format.toUpperCase()} code to clipboard!`);
+        }
+
+        // History management
+        function addToHistory(colors) {
+            const hexColors = colors.map(color => rgbToHex(...color));
+            paletteHistory.unshift(hexColors);
+            if (paletteHistory.length > 8) paletteHistory.pop();
+            localStorage.setItem('paletteHistory', JSON.stringify(paletteHistory));
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            history.innerHTML = '';
+            paletteHistory.forEach(colors => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                
+                const colorStrip = document.createElement('div');
+                colorStrip.className = 'history-colors';
+                
+                colors.forEach(color => {
+                    const strip = document.createElement('div');
+                    strip.className = 'history-color';
+                    strip.style.backgroundColor = color;
+                    colorStrip.appendChild(strip);
+                });
+                
+                item.appendChild(colorStrip);
+                item.addEventListener('click', () => {
+                    const rgbColors = colors.map(hexToRgb);
+                    displayPalette(rgbColors);
+                    generateColorSchemes(rgbColors[0]);
+                });
+                
+                history.appendChild(item);
+            });
+        }
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize history display
+        updateHistoryDisplay();
+    </script>
+</body>
+</html>
+
+        
